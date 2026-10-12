@@ -14,3 +14,4 @@
 - `functional_requirements.md` — функциональные требования
 - `entities.md` — список таблиц и их описание
 - `infological_model.png` — ненормализованная инфологическая модель
+- `datalogical_model.drawio.png` — нормализованная даталогическая модель

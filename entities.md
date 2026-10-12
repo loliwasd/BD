@@ -2,23 +2,21 @@
 
 ## Список таблиц
 
-| № | Сущность       | Назначение                                       |
-|---|----------------|--------------------------------------------------|
-| 1 | users          | Пользователи системы                             |
-| 2 | user_profiles  | Дополнительные данные профиля (1:1 с users)      |
-| 3 | roles          | Роли (client, manager, admin)                    |
-| 4 | user_roles     | M:N связь пользователей и ролей                  |
-| 5 | audit_log      | Журнал действий пользователей                    |
-| 6 | locations      | Локации коворкинга                               |
-| 7 | rooms          | Переговорные комнаты                             |
-| 8 | workspaces     | Конкретные бронируемые рабочие места/комнаты     |
-| 9 | tariffs        | Тарифы (цена за час)                             |
-|10 | bookings       | Брони клиентов                                   |
-|11 | payments       | Платежи по броням                                |
-|12 | reviews        | Отзывы клиентов                                  |
-
-> Промежуточная `user_roles` считается сущностью, т.к. несёт дополнительные
-> атрибуты (`granted_by`, `granted_at`), а не только связь двух таблиц.
+| № | Сущность           | Назначение                                       |
+|---|--------------------|--------------------------------------------------|
+| 1 | users              | Пользователи системы                             |
+| 2 | user_profiles      | Дополнительные данные профиля (1:1 с users)      |
+| 3 | roles              | Роли (client, manager, admin)                    |
+| 4 | user_roles         | M:N связь пользователей и ролей                  |
+| 5 | audit_log          | Журнал действий пользователей                    |
+| 6 | locations          | Локации коворкинга                               |
+| 7 | rooms              | Переговорные комнаты                             |
+| 8 | workspaces         | Конкретные бронируемые рабочие места/комнаты     |
+| 9 | type_tariffs       | Тарифы на тип рабочего места                     |
+|10 | workspace_tariffs  | Тарифы на конкретное рабочее место               |
+|11 | bookings           | Брони клиентов                                   |
+|12 | payments           | Платежи по броням                                |
+|13 | reviews            | Отзывы клиентов                                  |
 
 ---
 
@@ -166,30 +164,47 @@
 | is_active   | BOOLEAN     | NOT NULL DEFAULT TRUE                             |
 | created_at  | TIMESTAMPTZ | NOT NULL DEFAULT now()                            |
 
-**Связи:** N:1 `locations`, `rooms`; self-ref `parent_id`; 1:N `bookings`, `tariffs`.
+**Связи:** N:1 `locations`, `rooms`; self-ref `parent_id`; 1:N `bookings`, `type_tariffs` (косвенно через тип), `workspace_tariffs`.
 
 ---
 
-## 9. tariffs
+## 9. type_tariffs
 
-**Назначение:** тарифы (цена за час) для типа ресурса или конкретного ресурса.
+**Назначение:** тарифы (цена за час) на тип рабочего места.
 
 | Поле           | Тип           | Ограничения                                          |
 |----------------|---------------|------------------------------------------------------|
 | id             | BIGSERIAL     | PK                                                   |
-| type           | TEXT          | NULL, CHECK (type IN ('hot_desk','fixed_desk','meeting_room')) |
-| workspace_id   | BIGINT        | NULL, FK → workspaces(id) ON DELETE CASCADE          |
+| type           | TEXT          | NOT NULL, CHECK (type IN ('hot_desk','fixed_desk','meeting_room')) |
 | price_per_hour | NUMERIC(10,2) | NOT NULL, CHECK (price_per_hour >= 0)                |
 | currency       | CHAR(3)       | NOT NULL DEFAULT 'USD'                               |
 | valid_from     | DATE          | NOT NULL DEFAULT CURRENT_DATE                        |
 | valid_to       | DATE          | NULL, CHECK (valid_to IS NULL OR valid_to >= valid_from) |
-|                |               | CHECK (type IS NOT NULL OR workspace_id IS NOT NULL) |
+|                |               | UNIQUE (type, valid_from)                            |
 
-**Связи:** N:1 `workspaces` (если тариф на ресурс); `type` — ENUM-поле.
+**Связи:** нет FK; `type` — ENUM-поле, ссылается логически на `workspaces.type`.
 
 ---
 
-## 10. bookings
+## 10. workspace_tariffs
+
+**Назначение:** тарифы (цена за час) на конкретное рабочее место.
+
+| Поле           | Тип           | Ограничения                                          |
+|----------------|---------------|------------------------------------------------------|
+| id             | BIGSERIAL     | PK                                                   |
+| workspace_id   | BIGINT        | NOT NULL, FK → workspaces(id) ON DELETE CASCADE      |
+| price_per_hour | NUMERIC(10,2) | NOT NULL, CHECK (price_per_hour >= 0)                |
+| currency       | CHAR(3)       | NOT NULL DEFAULT 'USD'                               |
+| valid_from     | DATE          | NOT NULL DEFAULT CURRENT_DATE                        |
+| valid_to       | DATE          | NULL, CHECK (valid_to IS NULL OR valid_to >= valid_from) |
+|                |               | UNIQUE (workspace_id, valid_from)                    |
+
+**Связи:** N:1 `workspaces`.
+
+---
+
+## 11. bookings
 
 **Назначение:** брони клиентов.
 
@@ -212,7 +227,7 @@
 
 ---
 
-## 11. payments
+## 12. payments
 
 **Назначение:** платежи по броням (1:1 с бронью).
 
@@ -231,7 +246,7 @@
 
 ---
 
-## 12. reviews
+## 13. reviews
 
 **Назначение:** отзывы клиентов по завершённым броням.
 
@@ -258,7 +273,7 @@
 | 1:N              | locations → rooms, locations → workspaces        |
 | 1:N              | rooms → workspaces                               |
 | 1:N              | users → bookings, reviews, audit_log             |
-| 1:N              | workspaces → bookings, tariffs                   |
+| 1:N              | workspaces → bookings, workspace_tariffs         |
 | M:N              | users ↔ roles (через user_roles)                 |
 | self-referencing | locations.parent_id → locations.id               |
 | self-referencing | workspaces.parent_id → workspaces.id             |
