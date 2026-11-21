@@ -168,29 +168,21 @@ CREATE TABLE reviews (
     CONSTRAINT chk_reviews_comment CHECK (comment IS NULL OR char_length(comment) <= 1000)
 );
 
+CREATE INDEX idx_bookings_ws_time ON bookings(workspace_id, start_at, end_at);
 
-CREATE INDEX idx_user_profiles_user_id      ON user_profiles(user_id);
-CREATE INDEX idx_user_roles_user_id         ON user_roles(user_id);
-CREATE INDEX idx_user_roles_role_id         ON user_roles(role_id);
-CREATE INDEX idx_user_roles_granted_by      ON user_roles(granted_by);
-CREATE INDEX idx_audit_log_user_id          ON audit_log(user_id);
-CREATE INDEX idx_audit_log_created_at       ON audit_log(created_at DESC);
-CREATE INDEX idx_audit_log_entity           ON audit_log(entity_type, entity_id);
-CREATE INDEX idx_locations_parent_id        ON locations(parent_id);
-CREATE INDEX idx_rooms_location_id          ON rooms(location_id);
-CREATE INDEX idx_workspaces_location_id     ON workspaces(location_id);
-CREATE INDEX idx_workspaces_room_id         ON workspaces(room_id);
-CREATE INDEX idx_workspaces_parent_id       ON workspaces(parent_id);
-CREATE INDEX idx_workspace_tariffs_ws_id    ON workspace_tariffs(workspace_id);
-CREATE INDEX idx_bookings_user_id           ON bookings(user_id);
-CREATE INDEX idx_bookings_workspace_id      ON bookings(workspace_id);
-CREATE INDEX idx_bookings_status            ON bookings(status);
+CREATE INDEX idx_bookings_user_id ON bookings(user_id);
 
-CREATE INDEX idx_bookings_ws_time           ON bookings(workspace_id, start_at, end_at);
+CREATE INDEX idx_bookings_workspace_id ON bookings(workspace_id);
 
-CREATE INDEX idx_users_active               ON users(id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_bookings_status ON bookings(status);
 
+CREATE INDEX idx_user_roles_role_id ON user_roles(role_id);
 
+CREATE INDEX idx_audit_log_user_time ON audit_log(user_id, created_at DESC);
+
+CREATE INDEX idx_locations_parent_id ON locations(parent_id);
+
+CREATE INDEX idx_workspace_tariffs_ws_id ON workspace_tariffs(workspace_id);
 
 
 
